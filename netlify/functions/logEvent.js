@@ -1,38 +1,25 @@
 exports.handler = async function(event, context) {
   const { lat, lon, eventType } = JSON.parse(event.body);
   
-  // Get fresh access token
-  const tokenResponse = await fetch('https://accounts.zoho.com/oauth/v2/token', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-    body: new URLSearchParams({
-      refresh_token: process.env.ZOHO_REFRESH_TOKEN,
-      client_id: process.env.ZOHO_CLIENT_ID,
-      client_secret: process.env.ZOHO_CLIENT_SECRET,
-      grant_type: 'refresh_token'
-    })
-  });
-  const tokenData = await tokenResponse.json();
-  const accessToken = tokenData.access_token;
-
-  // Log to Zoho
-  const zohoResponse = await fetch('https://creator.zoho.com/api/v2/admin_swiftservellc/event-log/form/Event_Log1', {
+  const response = await fetch(`${process.env.SUPABASE_URL}/rest/v1/events`, {
     method: 'POST',
     headers: {
-      'Authorization': 'Zoho-oauthtoken ' + accessToken,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'apikey': process.env.SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY}`
     },
     body: JSON.stringify({
-      data: {
-        Event_Type: eventType,
-        Date_Time: new Date().toISOString(),
-        Latitude: lat,
-        Longitude: lon
-      }
+      event_type: eventType,
+      date_time: new Date().toISOString(),
+      latitude: lat,
+      longitude: lon,
+      added_user: 'rider'
     })
   });
-const result = await zohoResponse.json();
-  console.log('Zoho response:', JSON.stringify(result));
+
+  const result = await response.json();
+  console.log('Supabase response:', JSON.stringify(result));
+  
   return {
     statusCode: 200,
     body: JSON.stringify(result)
