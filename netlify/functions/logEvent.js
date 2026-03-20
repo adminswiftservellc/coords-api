@@ -1,5 +1,5 @@
 exports.handler = async function(event, context) {
-  const { lat, lon, eventType } = JSON.parse(event.body);
+  const { lat, lon, eventType, alt } = JSON.parse(event.body);
   
   const response = await fetch(`${process.env.SUPABASE_URL}/rest/v1/events`, {
     method: 'POST',
@@ -15,6 +15,7 @@ exports.handler = async function(event, context) {
       longitude: lon,
       added_user: 'rider'
     })
+    altitude_hpa :alt,
   });
 
   const result = await response.json();
