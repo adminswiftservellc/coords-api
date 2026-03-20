@@ -9,8 +9,8 @@ var lon=p.coords.longitude;
 document.getElementById('out').innerHTML='Got: '+lat+','+lon;
 fetch('https://kdhztumrsetenolqqtaz.supabase.co/functions/v1/log-event',{
 method:'POST',
-headers:{'Content-Type':'application/json', 'Authorization':Bearer[sb_publishable_Rjs4PIoPU0g-6dxd4NBANg_KQ8N5XuC]},
-body:JSON.stringify({lat:lat,lon:lon,eventType:'Arrival'**alt:p.coords.altitude**})
+headers:{'Content-Type':'application/json', 'Authorization': 'Bearer sb_publishable_Rjs4PIoPU0g-6dxd4NBANg_KQ8N5XuC'},
+body:JSON.stringify({lat:lat,lon:lon,eventType:'Arrival'alt:p.coords.altitude})
 })
 .then(function(){
 document.getElementById('out').innerHTML='Logged: '+lat+','+lon;
