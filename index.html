@@ -1,28 +1,54 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <title>4D Log Engine</title>
+</head>
 <body>
-<p id="out">Getting location...</p>
-<script>
-navigator.geolocation.getCurrentPosition(function(p){
-var lat=p.coords.latitude;
-var lon=p.coords.longitude;
-document.getElementById('out').innerHTML='Got: '+lat+','+lon;
-fetch('https://kdhztumrsetenolqqtaz.supabase.co/functions/v1/log-event',{
-method:'POST',
-headers:{'Content-Type':'application/json', 
-         'Authorization': 'Bearer sb_publishable_Rjs4PIoPU0g-6dxd4NBANg_KQ8N5XuC'
-        },
-body:JSON.stringify({lat:lat,
-                     lon:lon,
-                     eventType:'Arrival',
-                     alt:p.coords.altitude
-                    })
-.then(function(){
-document.getElementById('out').innerHTML='Logged: '+lat+','+lon;
-});
-},function(e){
-document.getElementById('out').innerHTML='Error:'+e.code;
-});
-</script>
+    <p id="out">Initializing Secure Handshake...</p>
+
+    <script>
+        // 1. Get the High-Resolution 4D Position
+        navigator.geolocation.getCurrentPosition(function(p) {
+            var lat = p.coords.latitude;
+            var lon = p.coords.longitude;
+            var alt = p.coords.altitude || 0; // Fallback to 0 if sensor is unavailable
+            
+            document.getElementById('out').innerHTML = 'Got Coordinates: ' + lat + ', ' + lon;
+
+            // 2. Direct-to-Edge Notarization
+            // Replace YOUR_ANON_KEY with the 'anon' public key from Supabase API settings
+            const SUPABASE_URL = 'https://kdhztumrsetenolqqtaz.supabase.co/functions/v1/log-event';
+            const ANON_KEY = 'sb_publishable_Rjs4PIoPU0g-6dxd4NBANg_KQ8N5XuC';
+
+            fetch(SUPABASE_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + ANON_KEY
+                },
+                body: JSON.stringify({
+                    lat: lat,
+                    lon: lon,
+                    eventType: 'Arrival',
+                    alt: alt
+                })
+            })
+            .then(function(response) {
+                if (response.ok) {
+                    document.getElementById('out').innerHTML = 'SUCCESS: 4D Event Notarized';
+                } else {
+                    document.getElementById('out').innerHTML = 'Auth Error: Check Headers';
+                }
+            })
+            .catch(function(error) {
+                document.getElementById('out').innerHTML = 'System Error: ' + error.message;
+            });
+
+        }, function(error) {
+            document.getElementById('out').innerHTML = 'GPS Denied: ' + error.message;
+        }, {
+            enableHighAccuracy: true // Forces the device to use GPS/Barometer
+        });
+    </script>
 </body>
 </html>
