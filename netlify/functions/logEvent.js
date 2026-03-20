@@ -31,7 +31,8 @@ exports.handler = async function(event, context) {
       }
     })
   });
-  const result = await zohoResponse.json();
+const result = await zohoResponse.json();
+  console.log('Zoho response:', JSON.stringify(result));
   return {
     statusCode: 200,
     body: JSON.stringify(result)
