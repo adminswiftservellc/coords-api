@@ -22,8 +22,13 @@
                     eventType: 'Arrival'
                 })
             })
-            .then(res => {
-                status.innerHTML = res.ok ? "SUCCESS: TRUCK IS ROLLING" : "AUTH ERROR: CHECK KEY";
+            .then(async res => {
+  if (res.ok) {
+    status.innerHTML = "SUCCESS: TRUCK IS ROLLING";
+  } else {
+    const errData = await res.json();
+    status.innerHTML = "SERVER REJECTED: " + errData.error;
+  }
             })
             .catch(err => { status.innerHTML = "CONNECTION FAILED"; });
 
