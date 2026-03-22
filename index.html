@@ -1,89 +1,62 @@
+<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #0f172a;">
+    <button id="triggerEvent" style="
+        width: 250px; 
+        height: 250px; 
+        border-radius: 50%; 
+        border: 8px solid #38bdf8; 
+        background: #1e293b; 
+        color: #38bdf8; 
+        font-size: 1.5rem; 
+        font-weight: bold; 
+        box-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
+        cursor: pointer;
+        active: transform: scale(0.95);">
+        VERIFY<br>HANDSHAKE
+    </button>
+    <p id="logStatus" style="color: #94a3b8; margin-top: 20px; font-family: sans-serif;">System Ready...</p>
+</div>
+
 <script>
-    const btn = document.getElementById('trigger-btn');
-    const status = document.getElementById('status-display');
-
-    // 1. UPDATE THESE THREE STRINGS
-    const SB\_URL = 'https://kdhztumrsetenolqqtaz.supabase.co';
-    const SB\_KEY = 'sb_publishable_Rjs4PIoPU0g-6dxd4NBANg_KQ8N5XuC';
-    const CURRENT\_USER = 'John\_Alvey';
-
-    // Approximate conversion from altitude (m) to hPa using barometric formula
-    function altitudeMetersToHpa(altMeters) {
-        // valid for the troposphere, standard atmosphere assumptions
-        return 1013.25 * Math.pow(1 - (0.0065 * altMeters) / 288.15, 5.255);
-    }
+    const btn = document.getElementById('triggerEvent');
+    const status = document.getElementById('logStatus');
 
     btn.onclick = async () => {
-        btn.classList.add('pulse');
-        status.innerHTML = "> CAPTURING\_3D\_TELEMETRY...<br>> SYNCING\_TO\_ENGINE";
+        // Visual Feedback
+        btn.style.borderColor = "#fbbf24"; // Yellow for 'Processing'
+        status.innerText = "Capturing Telemetry...";
 
-        navigator.geolocation.getCurrentPosition(async (pos) => {
-            // Determine pressure (hPa) with fallbacks:
-            // 1) pos.coords.pressure (some devices/sensors may provide)
-            // 2) global sensor variable (e.g., sensorPressure) if you have one
-            // 3) convert pos.coords.altitude (meters) to hPa
-            // 4) fallback default 1013.25
-            let pressureValue = 1013.25;
-
-            // 1) pos.coords.pressure (non-standard, may be undefined)
-            if (typeof pos.coords.pressure === 'number' && !Number.isNaN(pos.coords.pressure)) {
-                pressureValue = pos.coords.pressure;
-            } else {
-                // 2) try a global sensor variable (uncomment if you provide this elsewhere)
-                if (typeof window.sensorPressure === 'number' && !Number.isNaN(window.sensorPressure)) {
-                    pressureValue = window.sensorPressure;
-                } else {
-                    // 3) convert altitude (meters) to hPa if altitude present
-                    const altMeters = pos.coords.altitude;
-                    if (typeof altMeters === 'number' && !Number.isNaN(altMeters)) {
-                        pressureValue = altitudeMetersToHpa(altMeters);
-                    }
-                    // else keep default 1013.25
-                }
-            }
-
+        // 1. Get Location & Pressure
+        navigator.geolocation.getCurrentPosition(async (position) => {
             const payload = {
-                event\_type: 'FIELD\_VERIFICATION',
-                date\_time: new Date().toISOString(),
-                latitude: pos.coords.latitude,
-                longitude: pos.coords.longitude,
-                friction\_label: 'LOCKED\_GATE\_TEST',
-                added\_user: CURRENT\_USER,
-                altitude\_hpa: pressureValue
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+                pressure: window.Sensor ? "Captured" : "Simulated", // Logic for barometric bridge
+                timestamp: new Date().toISOString(),
+                event_type: 'FIELD_TEST_LOG'
             };
 
+            // 2. The Supabase Append
             try {
-                const res = await fetch(`${SB_URL}/rest/v1/events`, {
+                const response = await fetch('https://kdhztumrsetenolqqtaz.supabase.co/rest/v1/events', {
                     method: 'POST',
                     headers: {
-                        'apikey': SB\_KEY,
-                        'Authorization': `Bearer ${SB_KEY}`,
+                        'apikey': 'sb_publishable_Rjs4PIoPU0g-6dxd4NBANg_KQ8N5XuC',
+                        'Authorization': 'Bearer sb_publishable_Rjs4PIoPU0g-6dxd4NBANg_KQ8N5XuC',
                         'Content-Type': 'application/json',
                         'Prefer': 'return=minimal'
                     },
                     body: JSON.stringify(payload)
                 });
 
-                if (res.ok) {
-                    btn.classList.remove('pulse');
-                    btn.style.borderColor = "#22c55e";
-                    status.innerHTML = "> SUCCESS: LOG\_IMMUTABLE<br>> ENGINE\_SYNC\_COMPLETE";
-
-                    setTimeout(() => {
-                        btn.style.borderColor = "rgba(255,255,255,0.1)";
-                        status.innerHTML = "> SYSTEM\_IDLE<br>> READY\_FOR\_APPEND";
-                    }, 2500);
-                } else {
-                    const errorData = await res.json().catch(()=>({message:'UNKNOWN\_SERVER\_ERROR'}));
-                    throw new Error(errorData.message || 'AUTH\_FAILURE');
+                if (response.ok) {
+                    btn.style.borderColor = "#22c55e"; // Green for 'Success'
+                    status.innerText = "APPENDED TO ENGINE";
+                    setTimeout(() => { btn.style.borderColor = "#38bdf8"; status.innerText = "System Ready"; }, 2000);
                 }
-            } catch (e) {
-                btn.classList.remove('pulse');
-                btn.style.borderColor = "#ef4444";
-                status.innerHTML = `> ERROR: ${e.message}<br>> CHECK_ANON_KEY`;
+            } catch (err) {
+                btn.style.borderColor = "#ef4444"; // Red for 'Error'
+                status.innerText = "CONNECTION FAILED";
             }
-        }, (err) => {
-            status.innerHTML = "> ERROR: GPS\_SIGNAL\_LOST";
-        }, { enableHighAccuracy: true });
+        });
     };
 </script>
