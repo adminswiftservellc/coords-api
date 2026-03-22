@@ -13,6 +13,7 @@
             --error: #ef4444;
             --text: #f8fafc;
         }
+
         body {
             margin: 0; padding: 0;
             background-color: var(--bg);
@@ -21,11 +22,14 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             height: 100vh; overflow: hidden;
         }
+
         .container { width: 90%; max-width: 400px; text-align: center; }
+
         .header {
             margin-bottom: 2.5rem; letter-spacing: 0.15em; font-weight: 300;
             color: var(--accent); text-transform: uppercase; font-size: 0.75rem;
         }
+
         #trigger-btn {
             width: 240px; height: 240px;
             background: var(--card);
@@ -39,11 +43,13 @@
             -webkit-tap-highlight-color: transparent;
             outline: none;
         }
+
         #trigger-btn:active {
             transform: scale(0.94);
             border-color: var(--accent);
             box-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
         }
+
         .status-panel {
             margin-top: 3.5rem; padding: 1.2rem;
             background: rgba(15, 23, 42, 0.8);
@@ -52,6 +58,7 @@
             font-size: 0.75rem; color: #94a3b8; text-align: left;
             min-height: 40px; line-height: 1.4;
         }
+
         .pulse { animation: pulse-blue 2s infinite; }
         @keyframes pulse-blue {
             0% { box-shadow: 0 0 0 0px rgba(56, 189, 248, 0.4); }
@@ -79,10 +86,16 @@
         const status = document.getElementById('status-display');
 
         btn.onclick = async () => {
+            // Haptic Pulse 1: Initiation
+            if (navigator.vibrate) navigator.vibrate(10);
+
             btn.classList.add('pulse');
             status.innerHTML = "Waking up the Engine...";
 
             navigator.geolocation.getCurrentPosition(p => {
+                // Haptic Pulse 2: GPS Lock
+                if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
+
                 status.innerHTML = "GPS Locked. Sending to Vault...";
                 
                 fetch('https://kdhztumrsetenolqqtaz.supabase.co/functions/v1/log-event', {
@@ -100,6 +113,9 @@
                 })
                 .then(async res => {
                     if (res.ok) {
+                        // Haptic Pulse 3: Final Confirmation (Data Saved)
+                        if (navigator.vibrate) navigator.vibrate(200);
+
                         btn.classList.remove('pulse');
                         btn.style.borderColor = "var(--success)";
                         status.innerHTML = "SUCCESS: TRUCK IS ROLLING";
@@ -125,7 +141,7 @@
                 status.innerHTML = "GPS BLOCKED"; 
                 btn.classList.remove('pulse');
                 btn.style.borderColor = "var(--error)";
-            });
+            }, { enableHighAccuracy: true });
         };
     </script>
 </body>
