@@ -92,31 +92,28 @@
         const btn = document.getElementById('trigger-btn');
         const status = document.getElementById('status-display');
 
-        // Swap these with your actual Supabase credentials
-        const SB_URL = 'YOUR_SUPABASE_URL'; 
-        const SB_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        // Edge Function Config
+        const EDGE_URL = 'https://kdhztumrsetenolqqtaz.supabase.co/functions/v1/log-event';
+        const BEARER_TOKEN = 'sb_publishable_Rjs4PIoPU0g-6dxd4NBANg_KQ8N5XuC';
 
         btn.onclick = async () => {
             btn.classList.add('pulse');
-            status.innerHTML = "> CAPTURING_TELEMETRY...<br>> ENCRYPTING_HANDSHAKE";
+            status.innerHTML = "> GPS_LOCKED. SENDING_TO_VAULT...";
 
-            navigator.geolocation.getCurrentPosition(async (pos) => {
+            navigator.geolocation.getCurrentPosition(async (p) => {
                 const payload = {
-                    timestamp: new Date().toISOString(),
-                    lat: pos.coords.latitude,
-                    lng: pos.coords.longitude,
-                    event_type: 'FIELD_VERIFICATION',
-                    friction_tag: 'ALPHA_LIVE'
+                    lat: p.coords.latitude,
+                    lon: p.coords.longitude,
+                    alt: p.coords.altitude || 0,
+                    eventType: 'Arrival'
                 };
 
                 try {
-                    const res = await fetch(`${SB_URL}/rest/v1/events`, {
+                    const res = await fetch(EDGE_URL, {
                         method: 'POST',
                         headers: {
-                            'apikey': SB_KEY,
-                            'Authorization': `Bearer ${SB_KEY}`,
                             'Content-Type': 'application/json',
-                            'Prefer': 'return=minimal'
+                            'Authorization': `Bearer ${BEARER_TOKEN}`
                         },
                         body: JSON.stringify(payload)
                     });
@@ -124,22 +121,25 @@
                     if (res.ok) {
                         btn.classList.remove('pulse');
                         btn.style.borderColor = "var(--success)";
-                        status.innerHTML = "> SUCCESS: LOG_IMMUTABLE<br>> ENGINE_SYNC_COMPLETE";
+                        status.innerHTML = "> SUCCESS: TRUCK IS ROLLING<br>> ENGINE_SYNC_COMPLETE";
                         
                         setTimeout(() => {
                             btn.style.borderColor = "rgba(255,255,255,0.1)";
                             status.innerHTML = "> SYSTEM_IDLE<br>> READY_FOR_APPEND";
                         }, 3000);
-                    } else { throw new Error('API_REJECTED'); }
+                    } else {
+                        const errData = await res.json();
+                        throw new Error(errData.error || 'SERVER_REJECTED');
+                    }
                 } catch (e) {
                     btn.classList.remove('pulse');
                     btn.style.borderColor = "var(--error)";
-                    status.innerHTML = "> ERROR: UPLOAD_FAILED<br>> CHECK_NETWORK_CONNECTIVITY";
+                    status.innerHTML = `> ERROR: ${e.message}<br>> CHECK_NETWORK_CONNECTIVITY`;
                 }
             }, (err) => {
                 btn.classList.remove('pulse');
                 btn.style.borderColor = "var(--error)";
-                status.innerHTML = "> ERROR: GPS_PERMISSION_DENIED";
+                status.innerHTML = "> ERROR: GPS_BLOCKED";
             }, { enableHighAccuracy: true });
         };
     </script>
