@@ -1,38 +1,147 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Swift Serve | Engine V1</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --accent: #38bdf8;
+            --success: #22c55e;
+            --error: #ef4444;
+            --text: #f8fafc;
+        }
+
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; overflow: hidden;
+        }
+
+        .container { width: 90%; max-width: 400px; text-align: center; }
+
+        .header {
+            margin-bottom: 2.5rem; letter-spacing: 0.15em; font-weight: 300;
+            color: var(--accent); text-transform: uppercase; font-size: 0.75rem;
+        }
+
+        #trigger-btn {
+            width: 240px; height: 240px;
+            background: var(--card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            color: var(--text);
+            font-size: 1.1rem; font-weight: 600; letter-spacing: 0.05em;
+            cursor: pointer; position: relative;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(56, 189, 248, 0.05);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+        }
+
+        #trigger-btn::after {
+            content: ''; position: absolute;
+            top: 15px; left: 15px; right: 15px; bottom: 15px;
+            border-radius: 50%; border: 1px solid rgba(56, 189, 248, 0.1);
+            pointer-events: none;
+        }
+
+        #trigger-btn:active {
+            transform: scale(0.94);
+            border-color: var(--accent);
+            box-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
+        }
+
+        .status-panel {
+            margin-top: 3.5rem; padding: 1.2rem;
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 4px; border-left: 3px solid var(--accent);
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.75rem; color: #94a3b8; text-align: left;
+            min-height: 40px; line-height: 1.4;
+        }
+
+        .pulse { animation: pulse-blue 2s infinite; }
+        @keyframes pulse-blue {
+            0% { box-shadow: 0 0 0 0px rgba(56, 189, 248, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(56, 189, 248, 0); }
+            100% { box-shadow: 0 0 0 0px rgba(56, 189, 248, 0); }
+        }
+    </style>
+</head>
 <body>
-    <h2 id="status">Waking up the Engine...</h2>
+
+    <div class="container">
+        <div class="header">Operational Interface // Engine V1.0</div>
+        
+        <button id="trigger-btn">
+            VERIFY<br>HANDSHAKE
+        </button>
+
+        <div class="status-panel" id="status-display">
+            > SYSTEM_IDLE<br>> READY_FOR_APPEND
+        </div>
+    </div>
+
     <script>
-        const status = document.getElementById('status');
+        const btn = document.getElementById('trigger-btn');
+        const status = document.getElementById('status-display');
 
-        navigator.geolocation.getCurrentPosition(p => {
-            status.innerHTML = "GPS Locked. Sending to Vault...";
-            
-            // This is the direct pipe to your Supabase Edge Function
-            fetch('https://kdhztumrsetenolqqtaz.supabase.co/functions/v1/log-event', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization':'Bearer sb_publishable_Rjs4PIoPU0g-6dxd4NBANg_KQ8N5XuC'
-                },
-                body: JSON.stringify({
-                    lat: p.coords.latitude,
-                    lon: p.coords.longitude,
-                    alt: p.coords.altitude || 0,
-                    eventType: 'Arrival'
-                })
-            })
-            .then(async res => {
-  if (res.ok) {
-    status.innerHTML = "SUCCESS: TRUCK IS ROLLING";
-  } else {
-    const errData = await res.json();
-    status.innerHTML = "SERVER REJECTED: " + errData.error;
-  }
-            })
-            .catch(err => { status.innerHTML = "CONNECTION FAILED"; });
+        // Swap these with your actual Supabase credentials
+        const SB_URL = 'https://kdhztumrsetenolqqtaz.supabase.co/functions/v1/log-event'; 
+        const SB_KEY = 'sb_publishable_Rjs4PIoPU0g-6dxd4NBANg_KQ8N5XuC';
 
-        }, err => { status.innerHTML = "GPS BLOCKED"; });
+        btn.onclick = async () => {
+            btn.classList.add('pulse');
+            status.innerHTML = "> CAPTURING_TELEMETRY...<br>> ENCRYPTING_HANDSHAKE";
+
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const payload = {
+                    timestamp: new Date().toISOString(),
+                    lat: pos.coords.latitude,
+                    lng: pos.coords.longitude,
+                    event_type: 'FIELD_VERIFICATION',
+                    friction_tag: 'ALPHA_LIVE'
+                };
+
+                try {
+                    const res = await fetch(`${SB_URL}/rest/v1/events`, {
+                        method: 'POST',
+                        headers: {
+                            'apikey': SB_KEY,
+                            'Authorization': `Bearer ${SB_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (res.ok) {
+                        btn.classList.remove('pulse');
+                        btn.style.borderColor = "var(--success)";
+                        status.innerHTML = "> SUCCESS: LOG_IMMUTABLE<br>> ENGINE_SYNC_COMPLETE";
+                        
+                        setTimeout(() => {
+                            btn.style.borderColor = "rgba(255,255,255,0.1)";
+                            status.innerHTML = "> SYSTEM_IDLE<br>> READY_FOR_APPEND";
+                        }, 3000);
+                    } else { throw new Error('API_REJECTED'); }
+                } catch (e) {
+                    btn.classList.remove('pulse');
+                    btn.style.borderColor = "var(--error)";
+                    status.innerHTML = "> ERROR: UPLOAD_FAILED<br>> CHECK_NETWORK_CONNECTIVITY";
+                }
+            }, (err) => {
+                btn.classList.remove('pulse');
+                btn.style.borderColor = "var(--error)";
+                status.innerHTML = "> ERROR: GPS_PERMISSION_DENIED";
+            }, { enableHighAccuracy: true });
+        };
     </script>
 </body>
 </html>
