@@ -1,62 +1,166 @@
-<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #0f172a;">
-    <button id="triggerEvent" style="
-        width: 250px; 
-        height: 250px; 
-        border-radius: 50%; 
-        border: 8px solid #38bdf8; 
-        background: #1e293b; 
-        color: #38bdf8; 
-        font-size: 1.5rem; 
-        font-weight: bold; 
-        box-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
-        cursor: pointer;
-        active: transform: scale(0.95);">
-        VERIFY<br>HANDSHAKE
-    </button>
-    <p id="logStatus" style="color: #94a3b8; margin-top: 20px; font-family: sans-serif;">System Ready...</p>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Swift Serve | Engine V1</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --accent: #38bdf8;
+            --success: #22c55e;
+            --error: #ef4444;
+            --text: #f8fafc;
+        }
 
-<script>
-    const btn = document.getElementById('triggerEvent');
-    const status = document.getElementById('logStatus');
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
 
-    btn.onclick = async () => {
-        // Visual Feedback
-        btn.style.borderColor = "#fbbf24"; // Yellow for 'Processing'
-        status.innerText = "Capturing Telemetry...";
+        /* The Dashboard Container */
+        .container {
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
 
-        // 1. Get Location & Pressure
-        navigator.geolocation.getCurrentPosition(async (position) => {
-            const payload = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude,
-                pressure: window.Sensor ? "Captured" : "Simulated", // Logic for barometric bridge
-                timestamp: new Date().toISOString(),
-                event_type: 'FIELD_TEST_LOG'
-            };
+        .header {
+            margin-bottom: 2rem;
+            letter-spacing: 0.1em;
+            font-weight: 300;
+            color: var(--accent);
+            text-transform: uppercase;
+        }
 
-            // 2. The Supabase Append
-            try {
-                const response = await fetch('https://kdhztumrsetenolqqtaz.supabase.co/rest/v1/events', {
-                    method: 'POST',
-                    headers: {
-                        'apikey': 'sb_publishable_Rjs4PIoPU0g-6dxd4NBANg_KQ8N5XuC',
-                        'Authorization': 'Bearer sb_publishable_Rjs4PIoPU0g-6dxd4NBANg_KQ8N5XuC',
-                        'Content-Type': 'application/json',
-                        'Prefer': 'return=minimal'
-                    },
-                    body: JSON.stringify(payload)
-                });
+        /* The Main Action Button */
+        #trigger-btn {
+            width: 220px;
+            height: 220px;
+            background: var(--card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            color: var(--text);
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            position: relative;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), inset 0 0 15px rgba(56, 189, 248, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            -webkit-tap-highlight-color: transparent;
+        }
 
-                if (response.ok) {
-                    btn.style.borderColor = "#22c55e"; // Green for 'Success'
-                    status.innerText = "APPENDED TO ENGINE";
-                    setTimeout(() => { btn.style.borderColor = "#38bdf8"; status.innerText = "System Ready"; }, 2000);
+        /* Inner Ring Decoration */
+        #trigger-btn::after {
+            content: '';
+            position: absolute;
+            top: 10px; left: 10px; right: 10px; bottom: 10px;
+            border-radius: 50%;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            pointer-events: none;
+        }
+
+        #trigger-btn:active {
+            transform: scale(0.96);
+            background: #1e293b;
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+        }
+
+        .status-panel {
+            margin-top: 3rem;
+            padding: 1rem;
+            background: rgba(30, 41, 59, 0.5);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        .pulse { animation: pulse-animation 2s infinite; }
+        @keyframes pulse-animation {
+            0% { box-shadow: 0 0 0 0px rgba(56, 189, 248, 0.4); }
+            100% { box-shadow: 0 0 0 20px rgba(56, 189, 248, 0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">Swift Serve LLC // Engine</div>
+        
+        <button id="trigger-btn">
+            VERIFY<br>HANDSHAKE
+        </button>
+
+        <div class="status-panel" id="status-display">
+            > SYSTEM_READY<br>
+            > STANDBY_FOR_TELEMETRY
+        </div>
+    </div>
+
+    <script>
+        const btn = document.getElementById('trigger-btn');
+        const status = document.getElementById('status-display');
+
+        btn.onclick = async () => {
+            // Visual feedback: Start "Processing"
+            btn.classList.add('pulse');
+            btn.style.color = "#38bdf8";
+            status.innerHTML = "> CAPTURING_SENSORS...<br>> UPLOADING_TO_APPEND_ONLY_LOG";
+
+            // Get the current position
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const payload = {
+                    timestamp: new Date().toISOString(),
+                    lat: pos.coords.latitude,
+                    lng: pos.coords.longitude,
+                    event_type: 'FIELD_VERIFICATION',
+                    friction_tag: 'ALPHA_TEST'
+                };
+
+                try {
+                    // Replace with your actual Supabase POST URL and Key
+                    const res = await fetch('YOUR_SUPABASE_REST_URL', {
+                        method: 'POST',
+                        headers: {
+                            'apikey': 'YOUR_ANON_KEY',
+                            'Authorization': 'Bearer YOUR_ANON_KEY',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (res.ok) {
+                        btn.classList.remove('pulse');
+                        btn.style.borderColor = "#22c55e";
+                        status.innerHTML = "> SUCCESS: EVENT_IMMUTABLE<br>> ENGINE_SYNC_COMPLETE";
+                        
+                        // Reset after success
+                        setTimeout(() => {
+                            btn.style.borderColor = "rgba(255,255,255,0.1)";
+                            status.innerHTML = "> SYSTEM_READY<br>> STANDBY_FOR_TELEMETRY";
+                        }, 3000);
+                    }
+                } catch (e) {
+                    btn.classList.remove('pulse');
+                    btn.style.borderColor = "#ef4444";
+                    status.innerHTML = "> ERROR: CONNECTION_TIMEOUT<br>> RETRY_REQUIRED";
                 }
-            } catch (err) {
-                btn.style.borderColor = "#ef4444"; // Red for 'Error'
-                status.innerText = "CONNECTION FAILED";
-            }
-        });
-    };
-</script>
+            });
+        };
+    </script>
+</body>
+</html>
