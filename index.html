@@ -2,35 +2,61 @@
     const btn = document.getElementById('trigger-btn');
     const status = document.getElementById('status-display');
 
-    // 1. UPDATE THESE TWO STRINGS
-    const SB_URL = 'https://kdhztumrsetenolqqtaz.supabase.co'; 
-    const SB_KEY = 'sb_publishable_Rjs4PIoPU0g-6dxd4NBANg_KQ8N5XuC'; // Must start with eyJ
-    const CURRENT_USER = 'John_Alvey';
+    // 1. UPDATE THESE THREE STRINGS
+    const SB\_URL = 'https://kdhztumrsetenolqqtaz.supabase.co';
+    const SB\_KEY = 'sb_publishable_Rjs4PIoPU0g-6dxd4NBANg_KQ8N5XuC';
+    const CURRENT\_USER = 'John\_Alvey';
+
+    // Approximate conversion from altitude (m) to hPa using barometric formula
+    function altitudeMetersToHpa(altMeters) {
+        // valid for the troposphere, standard atmosphere assumptions
+        return 1013.25 * Math.pow(1 - (0.0065 * altMeters) / 288.15, 5.255);
+    }
 
     btn.onclick = async () => {
         btn.classList.add('pulse');
-        status.innerHTML = "> CAPTURING_3D_TELEMETRY...<br>> SYNCING_TO_ENGINE";
+        status.innerHTML = "> CAPTURING\_3D\_TELEMETRY...<br>> SYNCING\_TO\_ENGINE";
 
         navigator.geolocation.getCurrentPosition(async (pos) => {
-            
-            // Default pressure if sensor fails, but it keeps the column from being NULL
-            let pressureValue = 1013.25; 
+            // Determine pressure (hPa) with fallbacks:
+            // 1) pos.coords.pressure (some devices/sensors may provide)
+            // 2) global sensor variable (e.g., sensorPressure) if you have one
+            // 3) convert pos.coords.altitude (meters) to hPa
+            // 4) fallback default 1013.25
+            let pressureValue = 1013.25;
+
+            // 1) pos.coords.pressure (non-standard, may be undefined)
+            if (typeof pos.coords.pressure === 'number' && !Number.isNaN(pos.coords.pressure)) {
+                pressureValue = pos.coords.pressure;
+            } else {
+                // 2) try a global sensor variable (uncomment if you provide this elsewhere)
+                if (typeof window.sensorPressure === 'number' && !Number.isNaN(window.sensorPressure)) {
+                    pressureValue = window.sensorPressure;
+                } else {
+                    // 3) convert altitude (meters) to hPa if altitude present
+                    const altMeters = pos.coords.altitude;
+                    if (typeof altMeters === 'number' && !Number.isNaN(altMeters)) {
+                        pressureValue = altitudeMetersToHpa(altMeters);
+                    }
+                    // else keep default 1013.25
+                }
+            }
 
             const payload = {
-                event_type: 'FIELD_VERIFICATION',
-                date_time: new Date().toISOString(),
+                event\_type: 'FIELD\_VERIFICATION',
+                date\_time: new Date().toISOString(),
                 latitude: pos.coords.latitude,
                 longitude: pos.coords.longitude,
-                friction_label: 'LOCKED_GATE_TEST',
-                added_user: CURRENT_USER,     // Added for your schema
-                altitude_hpa: pressureValue   // Added for your schema
+                friction\_label: 'LOCKED\_GATE\_TEST',
+                added\_user: CURRENT\_USER,
+                altitude\_hpa: pressureValue
             };
 
             try {
                 const res = await fetch(`${SB_URL}/rest/v1/events`, {
                     method: 'POST',
                     headers: {
-                        'apikey': SB_KEY,
+                        'apikey': SB\_KEY,
                         'Authorization': `Bearer ${SB_KEY}`,
                         'Content-Type': 'application/json',
                         'Prefer': 'return=minimal'
@@ -41,15 +67,15 @@
                 if (res.ok) {
                     btn.classList.remove('pulse');
                     btn.style.borderColor = "#22c55e";
-                    status.innerHTML = "> SUCCESS: LOG_IMMUTABLE<br>> ENGINE_SYNC_COMPLETE";
-                    
+                    status.innerHTML = "> SUCCESS: LOG\_IMMUTABLE<br>> ENGINE\_SYNC\_COMPLETE";
+
                     setTimeout(() => {
                         btn.style.borderColor = "rgba(255,255,255,0.1)";
-                        status.innerHTML = "> SYSTEM_IDLE<br>> READY_FOR_APPEND";
+                        status.innerHTML = "> SYSTEM\_IDLE<br>> READY\_FOR\_APPEND";
                     }, 2500);
                 } else {
-                    const errorData = await res.json();
-                    throw new Error(errorData.message || 'AUTH_FAILURE');
+                    const errorData = await res.json().catch(()=>({message:'UNKNOWN\_SERVER\_ERROR'}));
+                    throw new Error(errorData.message || 'AUTH\_FAILURE');
                 }
             } catch (e) {
                 btn.classList.remove('pulse');
@@ -57,7 +83,7 @@
                 status.innerHTML = `> ERROR: ${e.message}<br>> CHECK_ANON_KEY`;
             }
         }, (err) => {
-            status.innerHTML = "> ERROR: GPS_SIGNAL_LOST";
+            status.innerHTML = "> ERROR: GPS\_SIGNAL\_LOST";
         }, { enableHighAccuracy: true });
     };
 </script>
