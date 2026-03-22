@@ -15,99 +15,76 @@
         }
 
         body {
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             background-color: var(--bg);
             color: var(--text);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; overflow: hidden;
         }
 
-        /* The Dashboard Container */
-        .container {
-            width: 90%;
-            max-width: 400px;
-            text-align: center;
-        }
+        .container { width: 90%; max-width: 400px; text-align: center; }
 
         .header {
-            margin-bottom: 2rem;
-            letter-spacing: 0.1em;
-            font-weight: 300;
-            color: var(--accent);
-            text-transform: uppercase;
+            margin-bottom: 2.5rem; letter-spacing: 0.15em; font-weight: 300;
+            color: var(--accent); text-transform: uppercase; font-size: 0.75rem;
         }
 
-        /* The Main Action Button */
         #trigger-btn {
-            width: 220px;
-            height: 220px;
+            width: 240px; height: 240px;
             background: var(--card);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 50%;
             color: var(--text);
-            font-size: 1.1rem;
-            font-weight: 600;
-            letter-spacing: 0.05em;
-            cursor: pointer;
-            position: relative;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), inset 0 0 15px rgba(56, 189, 248, 0.1);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 1.1rem; font-weight: 600; letter-spacing: 0.05em;
+            cursor: pointer; position: relative;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(56, 189, 248, 0.05);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
             -webkit-tap-highlight-color: transparent;
+            outline: none;
         }
 
-        /* Inner Ring Decoration */
         #trigger-btn::after {
-            content: '';
-            position: absolute;
-            top: 10px; left: 10px; right: 10px; bottom: 10px;
-            border-radius: 50%;
-            border: 1px solid rgba(56, 189, 248, 0.2);
+            content: ''; position: absolute;
+            top: 15px; left: 15px; right: 15px; bottom: 15px;
+            border-radius: 50%; border: 1px solid rgba(56, 189, 248, 0.1);
             pointer-events: none;
         }
 
         #trigger-btn:active {
-            transform: scale(0.96);
-            background: #1e293b;
+            transform: scale(0.94);
             border-color: var(--accent);
-            box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+            box-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
         }
 
         .status-panel {
-            margin-top: 3rem;
-            padding: 1rem;
-            background: rgba(30, 41, 59, 0.5);
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-top: 3.5rem; padding: 1.2rem;
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 4px; border-left: 3px solid var(--accent);
             font-family: 'Courier New', Courier, monospace;
-            font-size: 0.8rem;
-            color: #94a3b8;
+            font-size: 0.75rem; color: #94a3b8; text-align: left;
+            min-height: 40px; line-height: 1.4;
         }
 
-        .pulse { animation: pulse-animation 2s infinite; }
-        @keyframes pulse-animation {
+        .pulse { animation: pulse-blue 2s infinite; }
+        @keyframes pulse-blue {
             0% { box-shadow: 0 0 0 0px rgba(56, 189, 248, 0.4); }
-            100% { box-shadow: 0 0 0 20px rgba(56, 189, 248, 0); }
+            70% { box-shadow: 0 0 0 15px rgba(56, 189, 248, 0); }
+            100% { box-shadow: 0 0 0 0px rgba(56, 189, 248, 0); }
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <div class="header">Swift Serve LLC // Engine</div>
+        <div class="header">Operational Interface // Engine V1.0</div>
         
         <button id="trigger-btn">
             VERIFY<br>HANDSHAKE
         </button>
 
         <div class="status-panel" id="status-display">
-            > SYSTEM_READY<br>
-            > STANDBY_FOR_TELEMETRY
+            > SYSTEM_IDLE<br>> READY_FOR_APPEND
         </div>
     </div>
 
@@ -115,51 +92,55 @@
         const btn = document.getElementById('trigger-btn');
         const status = document.getElementById('status-display');
 
-        btn.onclick = async () => {
-            // Visual feedback: Start "Processing"
-            btn.classList.add('pulse');
-            btn.style.color = "#38bdf8";
-            status.innerHTML = "> CAPTURING_SENSORS...<br>> UPLOADING_TO_APPEND_ONLY_LOG";
+        // Swap these with your actual Supabase credentials
+        const SB_URL = 'YOUR_SUPABASE_URL'; 
+        const SB_KEY = 'YOUR_SUPABASE_ANON_KEY';
 
-            // Get the current position
+        btn.onclick = async () => {
+            btn.classList.add('pulse');
+            status.innerHTML = "> CAPTURING_TELEMETRY...<br>> ENCRYPTING_HANDSHAKE";
+
             navigator.geolocation.getCurrentPosition(async (pos) => {
                 const payload = {
                     timestamp: new Date().toISOString(),
                     lat: pos.coords.latitude,
                     lng: pos.coords.longitude,
                     event_type: 'FIELD_VERIFICATION',
-                    friction_tag: 'ALPHA_TEST'
+                    friction_tag: 'ALPHA_LIVE'
                 };
 
                 try {
-                    // Replace with your actual Supabase POST URL and Key
-                    const res = await fetch('https://kdhztumrsetenolqqtaz.supabase.co', {
+                    const res = await fetch(`${SB_URL}/rest/v1/events`, {
                         method: 'POST',
                         headers: {
-                            'apikey': 'YOUR_ANON_KEY',
-                            'Authorization': 'Bearer sb_publishable_Rjs4PIoPU0g-6dxd4NBANg_KQ8N5XuC',
-                            'Content-Type': 'application/json'
+                            'apikey': SB_KEY,
+                            'Authorization': `Bearer ${SB_KEY}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
                         },
                         body: JSON.stringify(payload)
                     });
 
                     if (res.ok) {
                         btn.classList.remove('pulse');
-                        btn.style.borderColor = "#22c55e";
-                        status.innerHTML = "> SUCCESS: EVENT_IMMUTABLE<br>> ENGINE_SYNC_COMPLETE";
+                        btn.style.borderColor = "var(--success)";
+                        status.innerHTML = "> SUCCESS: LOG_IMMUTABLE<br>> ENGINE_SYNC_COMPLETE";
                         
-                        // Reset after success
                         setTimeout(() => {
                             btn.style.borderColor = "rgba(255,255,255,0.1)";
-                            status.innerHTML = "> SYSTEM_READY<br>> STANDBY_FOR_TELEMETRY";
+                            status.innerHTML = "> SYSTEM_IDLE<br>> READY_FOR_APPEND";
                         }, 3000);
-                    }
+                    } else { throw new Error('API_REJECTED'); }
                 } catch (e) {
                     btn.classList.remove('pulse');
-                    btn.style.borderColor = "#ef4444";
-                    status.innerHTML = "> ERROR: CONNECTION_TIMEOUT<br>> RETRY_REQUIRED";
+                    btn.style.borderColor = "var(--error)";
+                    status.innerHTML = "> ERROR: UPLOAD_FAILED<br>> CHECK_NETWORK_CONNECTIVITY";
                 }
-            });
+            }, (err) => {
+                btn.classList.remove('pulse');
+                btn.style.borderColor = "var(--error)";
+                status.innerHTML = "> ERROR: GPS_PERMISSION_DENIED";
+            }, { enableHighAccuracy: true });
         };
     </script>
 </body>
