@@ -1,133 +1,47 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Swift Serve | Engine V1</title>
-    <style>
-        :root {
-            --bg: #0f172a;
-            --card: #1e293b;
-            --accent: #38bdf8;
-            --success: #22c55e;
-            --error: #ef4444;
-            --text: #f8fafc;
-        }
-
-        body {
-            margin: 0; padding: 0;
-            background-color: var(--bg);
-            color: var(--text);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 100vh; overflow: hidden;
-        }
-
-        .container { width: 90%; max-width: 400px; text-align: center; }
-
-        .header {
-            margin-bottom: 2.5rem; letter-spacing: 0.15em; font-weight: 300;
-            color: var(--accent); text-transform: uppercase; font-size: 0.75rem;
-        }
-
-        #trigger-btn {
-            width: 240px; height: 240px;
-            background: var(--card);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            color: var(--text);
-            font-size: 1.1rem; font-weight: 600; letter-spacing: 0.05em;
-            cursor: pointer; position: relative;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(56, 189, 248, 0.05);
-            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-            -webkit-tap-highlight-color: transparent;
-            outline: none;
-        }
-
-        #trigger-btn::after {
-            content: ''; position: absolute;
-            top: 15px; left: 15px; right: 15px; bottom: 15px;
-            border-radius: 50%; border: 1px solid rgba(56, 189, 248, 0.1);
-            pointer-events: none;
-        }
-
-        #trigger-btn:active {
-            transform: scale(0.94);
-            border-color: var(--accent);
-            box-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
-        }
-
-        .status-panel {
-            margin-top: 3.5rem; padding: 1.2rem;
-            background: rgba(15, 23, 42, 0.8);
-            border-radius: 4px; border-left: 3px solid var(--accent);
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 0.75rem; color: #94a3b8; text-align: left;
-            min-height: 40px; line-height: 1.4;
-        }
-
-        .pulse { animation: pulse-blue 2s infinite; }
-        @keyframes pulse-blue {
-            0% { box-shadow: 0 0 0 0px rgba(56, 189, 248, 0.4); }
-            70% { box-shadow: 0 0 0 15px rgba(56, 189, 248, 0); }
-            100% { box-shadow: 0 0 0 0px rgba(56, 189, 248, 0); }
-        }
-    </style>
-</head>
-<body>
-
-    <div class="container">
-        <div class="header">Operational Interface // Engine V1.0</div>
-        
-        <button id="trigger-btn">
-            VERIFY<br>HANDSHAKE
-        </button>
-
-        <div class="status-panel" id="status-display">
-            > SYSTEM_IDLE<br>> READY_FOR_APPEND
-        </div>
-    </div>
-
-    <script>
+<script>
     const btn = document.getElementById('trigger-btn');
     const status = document.getElementById('status-display');
 
-    // 1. Swap these with your Supabase Project details
+    // 1. UPDATE THESE TWO STRINGS
     const SB_URL = 'https://kdhztumrsetenolqqtaz.supabase.co'; 
-    const SB_KEY = 'sb_publishable_Rjs4PIoPU0g-6dxd4NBANg_KQ8N5XuC'; 
+    const SB_KEY = 'PASTE_YOUR_LONG_eyJ_KEY_HERE'; // Must start with eyJ
+    const CURRENT_USER = 'John_Alvey';
 
     btn.onclick = async () => {
-        // Visual Feedback
         btn.classList.add('pulse');
-        status.innerHTML = "> CAPTURING_GPS...<br>> PREPARING_APPEND";
+        status.innerHTML = "> CAPTURING_3D_TELEMETRY...<br>> SYNCING_TO_ENGINE";
 
         navigator.geolocation.getCurrentPosition(async (pos) => {
-            // 2. The Payload (Matching your 'events' table schema)
+            
+            // Default pressure if sensor fails, but it keeps the column from being NULL
+            let pressureValue = 1013.25; 
+
             const payload = {
                 event_type: 'FIELD_VERIFICATION',
                 date_time: new Date().toISOString(),
                 latitude: pos.coords.latitude,
                 longitude: pos.coords.longitude,
-                friction_label: 'LOCKED_GATE_TEST' // You can change this per delivery
+                friction_label: 'LOCKED_GATE_TEST',
+                added_user: CURRENT_USER,     // Added for your schema
+                altitude_hpa: pressureValue   // Added for your schema
             };
 
             try {
-                // 3. Direct Fetch to Supabase REST API
                 const res = await fetch(`${SB_URL}/rest/v1/events`, {
-    method: 'POST',
-    headers: {
-        'apikey': SB_KEY,                // The "Missing Link"
-        'Authorization': `Bearer ${SB_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'
-    },
-    body: JSON.stringify(payload)
-});
+                    method: 'POST',
+                    headers: {
+                        'apikey': SB_KEY,
+                        'Authorization': `Bearer ${SB_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify(payload)
+                });
 
                 if (res.ok) {
                     btn.classList.remove('pulse');
-                    btn.style.borderColor = "#22c55e"; // Success Green
-                    status.innerHTML = "> SUCCESS: LOG_IMMUTABLE<br>> ROW_APPENDED_TO_ENGINE";
+                    btn.style.borderColor = "#22c55e";
+                    status.innerHTML = "> SUCCESS: LOG_IMMUTABLE<br>> ENGINE_SYNC_COMPLETE";
                     
                     setTimeout(() => {
                         btn.style.borderColor = "rgba(255,255,255,0.1)";
@@ -135,18 +49,15 @@
                     }, 2500);
                 } else {
                     const errorData = await res.json();
-                    console.error("Supabase Error:", errorData);
-                    throw new Error(errorData.message || 'API_REJECTED');
+                    throw new Error(errorData.message || 'AUTH_FAILURE');
                 }
             } catch (e) {
                 btn.classList.remove('pulse');
-                btn.style.borderColor = "#ef4444"; // Error Red
-                status.innerHTML = `> ERROR: ${e.message}<br>> CHECK_DB_CONNECTION`;
+                btn.style.borderColor = "#ef4444";
+                status.innerHTML = `> ERROR: ${e.message}<br>> CHECK_ANON_KEY`;
             }
         }, (err) => {
-            status.innerHTML = "> ERROR: GPS_PERMISSION_DENIED";
+            status.innerHTML = "> ERROR: GPS_SIGNAL_LOST";
         }, { enableHighAccuracy: true });
     };
 </script>
-</body>
-</html>
