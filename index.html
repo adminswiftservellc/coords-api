@@ -114,15 +114,15 @@
             try {
                 // 3. Direct Fetch to Supabase REST API
                 const res = await fetch(`${SB_URL}/rest/v1/events`, {
-                    method: 'POST',
-                    headers: {
-                        'apikey': SB_KEY,
-                        'Authorization': `Bearer ${SB_KEY}`,
-                        'Content-Type': 'application/json',
-                        'Prefer': 'return=minimal'
-                    },
-                    body: JSON.stringify(payload)
-                });
+    method: 'POST',
+    headers: {
+        'apikey': SB_KEY,                // The "Missing Link"
+        'Authorization': `Bearer ${SB_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify(payload)
+});
 
                 if (res.ok) {
                     btn.classList.remove('pulse');
